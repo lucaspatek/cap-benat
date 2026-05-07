@@ -1,8 +1,11 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+const kv = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
 
 const KEY = 'cap_benat_reservations';
 
-// Preloaded reservations from WhatsApp history
 const PRELOADED = [
   { id: 1, people: ['Lucas'], start: '2026-05-01', end: '2026-05-04', note: '', uncertain: false, addedBy: 'Lucas' },
   { id: 2, people: ['Laurent'], start: '2026-06-13', end: '2026-06-14', note: '', uncertain: false, addedBy: 'Laurent' },
