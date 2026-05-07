@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cap Benat — Calendrier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sand: #F5F0E8;
+      --sand-dark: #E8E0D0;
+      --ink: #2C2416;
+      --ink-light: #7A6F60;
+      --ink-faint: #B8AFA0;
+      --sea: #2E6B7A;
+      --sea-light: #D4E8ED;
+      --white: #FDFAF5;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--sand);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── IDENTITY SCREEN ── */
+    #id-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    #id-screen h1 {
+      font-family: 'Lora', serif;
+      font-size: 2rem;
+      font-weight: 400;
+      margin-bottom: 0.25rem;
+      color: var(--ink);
+    }
+    #id-screen .subtitle {
+      font-size: 13px;
+      color: var(--ink-light);
+      margin-bottom: 2.5rem;
+      font-style: italic;
+      font-family: 'Lora', serif;
+    }
+    .family-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      width: 100%;
+      max-width: 460px;
+      margin-bottom: 2rem;
+    }
+    .family-group { display: contents; }
+    .group-label {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-align: left;
+      margin-top: 8px;
+      padding-left: 2px;
+    }
+    .person-btn {
+      background: var(--white);
+      border: 1px solid var(--sand-dark);
+      border-radius: var(--radius);
+      padding: 14px 10px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink);
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    }
+    .person-btn:hover { background: var(--sea-light); border-color: var(--sea); transform: translateY(-1px); }
+    .person-btn.selected { background: var(--sea); color: #fff; border-color: var(--sea); }
+
+    /* ── APP ── */
+    #app { display: none; max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .app-header h1 {
+      font-family: 'Lora', serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+    }
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--ink-light);
+      background: var(--white);
+      border: 1px solid var(--sand-dark);
+      border-radius: 20px;
+      padding: 5px 12px;
+      cursor: pointer;
+    }
+    .user-chip:hover { border-color: var(--sea); color: var(--sea); }
+    .user-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ── CALENDAR ── */
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .cal-nav button {
+      background: none;
+      border: 1px solid var(--sand-dark);
+      border-radius: var(--radius);
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--ink-light);
+    }
+    .cal-nav button:hover { border-color: var(--sea); color: var(--sea); }
+    .cal-nav .month-label {
+      font-family: 'Lora', serif;
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    .day-labels {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+      margin-bottom: 3px;
+    }
+    .day-labels span {
+      text-align: center;
+      font-size: 10px;
+      color: var(--ink-faint);
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      padding: 2px 0;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .day {
+      background: var(--white);
+      border-radius: 8px;
+      min-height: 76px;
+      padding: 5px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: border-color 0.12s;
+      position: relative;
+    }
+    .day:hover { border-color: var(--sea); }
+    .day.other { opacity: 0.2; pointer-events: none; }
+    .day.today .dn { background: var(--sea); color: #fff; border-radius: 50%; }
+    .day.has-slot { background: #FDFAF5; }
+    .dn {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink-light);
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .free-label { font-size: 9px; color: var(--ink-faint); font-style: italic; margin-top: 3px; }
+    .slot {
+      font-size: 9.5px;
+      font-weight: 500;
+      border-radius: 4px;
+      padding: 2px 4px;
+      margin-top: 2px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .slot.uncertain { opacity: 0.5; font-style: italic; }
+    .slot:hover { opacity: 0.75; }
+
+    /* ── LEGEND ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 1rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--ink-light);
+    }
+    .ldot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    .uncertain-note { font-size: 11px; color: var(--ink-faint); margin-top: 8px; font-style: italic; }
+
+    /* ── ADD BTN ── */
+    .add-fab {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--sea);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 13px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(46,107,122,0.35);
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    .add-fab:hover { transform: translateY(-2px); opacity: 0.92; }
+
+    /* ── MODAL ── */
+    .modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(44,36,22,0.45);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+    }
+    .modal-bg.open { display: flex; }
+    .modal {
+      background: var(--white);
+      border-radius: 20px 20px 0 0;
+      padding: 1.5rem 1.5rem 2rem;
+      width: 100%;
+      max-width: 480px;
+    }
+    .modal-handle {
+      width: 36px; height: 4px;
+      background: var(--sand-dark);
+      border-radius: 2px;
+      margin: 0 auto 1.25rem;
+    }
+    .modal h3 {
+      font-family: 'Lora', serif;
+      font-size: 1.1rem;
+      font-weight: 400;
+      margin-bottom: 1rem;
+    }
+    .modal label {
+      font-size: 12px;
+      color: var(--ink-light);
+      display: block;
+      margin-bottom: 4px;
+      margin-top: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .modal input, .modal select, .modal textarea {
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      background: var(--sand);
+      border: 1px solid var(--sand-dark);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      color: var(--ink);
+      outline: none;
+    }
+    .modal input:focus, .modal select:focus { border-color: var(--sea); }
+
+    .people-select {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 4px;
+    }
+    .pchip {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      border: 1px solid var(--sand-dark);
+      background: var(--white);
+      cursor: pointer;
+      color: var(--ink);
+      transition: all 0.12s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .pchip.sel { color: #fff; border-color: transparent; }
+
+    .uncertain-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--ink-light);
+      cursor: pointer;
+    }
+    .uncertain-row input { width: auto; }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 1.25rem;
+    }
+    .btn-cancel {
+      flex: 1;
+      background: none;
+      border: 1px solid var(--sand-dark);
+      border-radius: var(--radius);
+      padding: 11px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--ink-light);
+    }
+    .btn-save {
+      flex: 2;
+      background: var(--sea);
+      border: none;
+      border-radius: var(--radius);
+      padding: 11px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+    }
+    .btn-save:hover { opacity: 0.88; }
+    .btn-del {
+      font-size: 12px;
+      color: #C0392B;
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+      display: block;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--ink);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      z-index: 300;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- IDENTITY SCREEN -->
+<div id="id-screen">
+  <h1>Cap Benat</h1>
+  <p class="subtitle">Résidence des Mimosas · Bormes</p>
+
+  <div class="family-grid" id="family-grid"></div>
+
+  <p style="font-size:12px; color:var(--ink-faint);">Ton choix sera mémorisé sur cet appareil</p>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="app-header">
+    <h1>Cap Benat 🌊</h1>
+    <div class="user-chip" onclick="switchUser()" id="user-chip">
+      <div class="user-dot" id="chip-dot"></div>
+      <span id="chip-name"></span>
+      <span style="font-size:10px; opacity:0.6;">changer</span>
+    </div>
+  </div>
+
+  <div class="cal-nav">
+    <button onclick="changeMonth(-1)">&#8249;</button>
+    <span class="month-label" id="month-label"></span>
+    <button onclick="changeMonth(1)">&#8250;</button>
+  </div>
+
+  <div class="day-labels">
+    <span>LUN</span><span>MAR</span><span>MER</span>
+    <span>JEU</span><span>VEN</span><span>SAM</span><span>DIM</span>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+
+  <div class="legend" id="legend"></div>
+  <p class="uncertain-note" id="uncertain-note" style="display:none">· en italique = à confirmer</p>
+
+  <button class="add-fab" onclick="openModal()">+ Réserver</button>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="modal-title">Nouvelle réservation</h3>
+
+    <label>Qui vient ?</label>
+    <div class="people-select" id="people-select"></div>
+
+    <label>Arrivée</label>
+    <input type="date" id="inp-start" />
+    <label>Départ</label>
+    <input type="date" id="inp-end" />
+    <label>Note (optionnel)</label>
+    <input type="text" id="inp-note" placeholder="ex. toute la famille, avec les enfants…" />
+
+    <label class="uncertain-row" style="margin-top:14px; display:flex; align-items:center; gap:8px; text-transform:none; letter-spacing:0;">
+      <input type="checkbox" id="inp-uncertain" style="width:auto;" />
+      <span style="font-size:13px; color:var(--ink-light);">À confirmer</span>
+    </label>
+
+    <div id="edit-del" style="display:none; text-align:right;">
+      <button class="btn-del" onclick="deleteRes()">🗑 Supprimer cette réservation</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-save" onclick="saveRes()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const FAMILY = [
+  { group: 'Chez Christine', members: ['Christine','Maryse','Nathan','Margot','Lucas'] },
+  { group: 'Chez Laurent', members: ['Laurent','Lee-Lou','Sacha'] },
+  { group: 'Chez Patrick', members: ['Patrick','Cécile','Alice','Anna'] },
+];
+const ALL_PEOPLE = FAMILY.flatMap(g => g.members);
+
+const PALETTE = [
+  {bg:'#B5D4F4',text:'#0C447C'},
+  {bg:'#9FE1CB',text:'#085041'},
+  {bg:'#FAC775',text:'#633806'},
+  {bg:'#F4C0D1',text:'#72243E'},
+  {bg:'#C0DD97',text:'#27500A'},
+  {bg:'#F5C4B3',text:'#712B13'},
+  {bg:'#CECBF6',text:'#3C3489'},
+  {bg:'#D3D1C7',text:'#444441'},
+  {bg:'#A8D8E8',text:'#0A3D52'},
+  {bg:'#FFD6A5',text:'#6B3A00'},
+];
+const personColor = {};
+ALL_PEOPLE.forEach((p,i) => { personColor[p] = PALETTE[i % PALETTE.length]; });
+
+let currentUser = localStorage.getItem('cap_benat_user') || null;
+let reservations = [];
+let currentDate = new Date(2026, 4, 1);
+let editingId = null;
+let selectedPeople = [];
+
+// ── IDENTITY ──
+function buildIdScreen() {
+  const grid = document.getElementById('family-grid');
+  grid.innerHTML = '';
+  FAMILY.forEach(g => {
+    const lbl = document.createElement('div');
+    lbl.className = 'group-label';
+    lbl.textContent = g.group;
+    grid.appendChild(lbl);
+    g.members.forEach(name => {
+      const btn = document.createElement('button');
+      btn.className = 'person-btn';
+      btn.textContent = name;
+      const c = personColor[name];
+      btn.style.borderLeftWidth = '3px';
+      btn.style.borderLeftColor = c.bg;
+      btn.onclick = () => selectUser(name);
+      grid.appendChild(btn);
+    });
+  });
+}
+
+function selectUser(name) {
+  currentUser = name;
+  localStorage.setItem('cap_benat_user', name);
+  showApp();
+}
+
+function switchUser() {
+  currentUser = null;
+  localStorage.removeItem('cap_benat_user');
+  document.getElementById('id-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('id-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  const c = personColor[currentUser];
+  document.getElementById('chip-dot').style.background = c.bg;
+  document.getElementById('chip-name').textContent = currentUser;
+  loadReservations();
+}
+
+// ── API ──
+async function loadReservations() {
+  try {
+    const r = await fetch('/api/reservations');
+    const data = await r.json();
+    reservations = data.reservations || [];
+  } catch(e) {
+    reservations = JSON.parse(localStorage.getItem('cap_benat_local') || '[]');
+  }
+  render();
+}
+
+async function saveToServer(res) {
+  try {
+    await fetch('/api/reservations', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(res)
+    });
+  } catch(e) {
+    localStorage.setItem('cap_benat_local', JSON.stringify(reservations));
+  }
+}
+
+async function deleteFromServer(id) {
+  try {
+    await fetch('/api/reservations', {
+      method: 'DELETE',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({id})
+    });
+  } catch(e) {
+    localStorage.setItem('cap_benat_local', JSON.stringify(reservations));
+  }
+}
+
+// ── CALENDAR ──
+function toYMD(d) { return d.toISOString().slice(0,10); }
+
+function changeMonth(delta) {
+  currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + delta, 1);
+  render();
+}
+
+function render() {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  document.getElementById('month-label').textContent = months[month] + ' ' + year;
+
+  let dow = new Date(year, month, 1).getDay();
+  dow = dow === 0 ? 6 : dow - 1;
+  const dim = new Date(year, month+1, 0).getDate();
+  const todayStr = toYMD(new Date());
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  const cells = [];
+  for (let i=0; i<dow; i++) {
+    cells.push({date: toYMD(new Date(year, month, 1-(dow-i))), in: false});
+  }
+  for (let d=1; d<=dim; d++) cells.push({date: toYMD(new Date(year,month,d)), in: true});
+  const rem = (7 - cells.length%7) % 7;
+  for (let i=1; i<=rem; i++) cells.push({date: toYMD(new Date(year,month+1,i)), in: false});
+
+  let hasUncertain = false;
+
+  cells.forEach(cell => {
+    const div = document.createElement('div');
+    const ress = reservations.filter(r => r.start <= cell.date && r.end >= cell.date);
+    div.className = 'day' + (!cell.in?' other':'') + (cell.date===todayStr?' today':'') + (ress.length?' has-slot':'');
+
+    const dn = document.createElement('div');
+    dn.className = 'dn';
+    dn.textContent = parseInt(cell.date.slice(8));
+    div.appendChild(dn);
+
+    if (ress.length === 0 && cell.in) {
+      const fl = document.createElement('div');
+      fl.className = 'free-label';
+      fl.textContent = 'libre';
+      div.appendChild(fl);
+    }
+
+    ress.forEach(r => {
+      r.people.forEach(person => {
+        const c = personColor[person] || PALETTE[0];
+        const tag = document.createElement('div');
+        tag.className = 'slot' + (r.uncertain?' uncertain':'');
+        tag.style.background = c.bg;
+        tag.style.color = c.text;
+        tag.textContent = person + (r.note ? ' · '+r.note : '');
+        tag.title = person + '\n' + r.start + ' → ' + r.end + (r.uncertain?' (à confirmer)':'');
+        tag.onclick = (e) => { e.stopPropagation(); openModalEdit(r.id); };
+        div.appendChild(tag);
+        if (r.uncertain) hasUncertain = true;
+      });
+    });
+
+    div.onclick = () => { if (cell.in) openModal(cell.date); };
+    grid.appendChild(div);
+  });
+
+  document.getElementById('uncertain-note').style.display = hasUncertain ? 'block' : 'none';
+
+  // Legend
+  const usedPeople = [...new Set(reservations.flatMap(r => r.people))];
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  usedPeople.forEach(p => {
+    const c = personColor[p] || PALETTE[0];
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="ldot" style="background:${c.bg};outline:1.5px solid ${c.text}"></div><span>${p}</span>`;
+    legend.appendChild(item);
+  });
+}
+
+// ── MODAL ──
+function buildPeopleChips(selected=[]) {
+  const container = document.getElementById('people-select');
+  container.innerHTML = '';
+  selectedPeople = [...selected];
+  ALL_PEOPLE.forEach(p => {
+    const chip = document.createElement('button');
+    chip.className = 'pchip' + (selectedPeople.includes(p)?' sel':'');
+    chip.textContent = p;
+    const c = personColor[p];
+    if (selectedPeople.includes(p)) {
+      chip.style.background = c.bg;
+      chip.style.color = c.text;
+    }
+    chip.onclick = () => togglePerson(p, chip);
+    container.appendChild(chip);
+  });
+}
+
+function togglePerson(p, chip) {
+  const c = personColor[p];
+  if (selectedPeople.includes(p)) {
+    selectedPeople = selectedPeople.filter(x => x !== p);
+    chip.classList.remove('sel');
+    chip.style.background = '';
+    chip.style.color = '';
+  } else {
+    selectedPeople.push(p);
+    chip.classList.add('sel');
+    chip.style.background = c.bg;
+    chip.style.color = c.text;
+  }
+}
+
+function openModal(dateStr) {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Nouvelle réservation';
+  document.getElementById('edit-del').style.display = 'none';
+  document.getElementById('inp-start').value = dateStr || '';
+  document.getElementById('inp-end').value = dateStr || '';
+  document.getElementById('inp-note').value = '';
+  document.getElementById('inp-uncertain').checked = false;
+  buildPeopleChips([currentUser]);
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function openModalEdit(id) {
+  const r = reservations.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Modifier la réservation';
+  document.getElementById('edit-del').style.display = 'block';
+  document.getElementById('inp-start').value = r.start;
+  document.getElementById('inp-end').value = r.end;
+  document.getElementById('inp-note').value = r.note || '';
+  document.getElementById('inp-uncertain').checked = !!r.uncertain;
+  buildPeopleChips(r.people || []);
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
+
+async function saveRes() {
+  const start = document.getElementById('inp-start').value;
+  const end = document.getElementById('inp-end').value;
+  const note = document.getElementById('inp-note').value.trim();
+  const uncertain = document.getElementById('inp-uncertain').checked;
+  if (!selectedPeople.length || !start || !end) { showToast('Remplis tous les champs !'); return; }
+  if (end < start) { showToast('La date de fin doit être après le début'); return; }
+
+  if (editingId !== null) {
+    reservations = reservations.map(r => r.id === editingId ? {...r, people: selectedPeople, start, end, note, uncertain} : r);
+  } else {
+    const res = { id: Date.now(), people: selectedPeople, start, end, note, uncertain, addedBy: currentUser };
+    reservations.push(res);
+  }
+  await saveToServer({ action: editingId ? 'update' : 'add', reservations });
+  closeModal();
+  render();
+  showToast('Réservation enregistrée ✓');
+}
+
+async function deleteRes() {
+  if (editingId === null) return;
+  reservations = reservations.filter(r => r.id !== editingId);
+  await saveToServer({ action: 'delete', reservations });
+  closeModal();
+  render();
+  showToast('Réservation supprimée');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.getElementById('modal-bg').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
+
+// ── INIT ──
+buildIdScreen();
+if (currentUser) showApp();
+</script>
+</body>
+</html>
