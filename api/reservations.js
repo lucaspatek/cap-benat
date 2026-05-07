@@ -7,6 +7,15 @@ const kv = new Redis({
 
 const KEY = 'cap_benat_reservations';
 
+function parseReservations(data) {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (typeof data === 'string') {
+    try { return JSON.parse(data); } catch(e) { return []; }
+  }
+  return [];
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -16,8 +25,9 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const reservations = await kv.get(KEY);
-      return res.status(200).json({ reservations: reservations || [] });
+      const raw = await kv.get(KEY);
+      const reservations = parseReservations(raw);
+      return res.status(200).json({ reservations });
     } catch (e) {
       console.error(e);
       return res.status(500).json({ error: e.message });
@@ -28,7 +38,7 @@ module.exports = async function handler(req, res) {
     try {
       const { reservations } = req.body;
       if (!Array.isArray(reservations)) return res.status(400).json({ error: 'Invalid data' });
-      await kv.set(KEY, reservations);
+      await kv.set(KEY, JSON.stringify(reservations));
       return res.status(200).json({ ok: true });
     } catch (e) {
       console.error(e);
