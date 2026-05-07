@@ -185,6 +185,18 @@
       justify-content: center;
     }
     .free-label { font-size: 9px; color: var(--ink-faint); font-style: italic; margin-top: 3px; }
+
+    @media (max-width: 480px) {
+      #app { padding: 1rem 0.5rem 4rem; }
+      .cal-grid, .day-labels { gap: 1px; }
+      .day { min-height: 48px; padding: 2px; border-radius: 5px; }
+      .dn { font-size: 9px; width: 14px; height: 14px; }
+      .slot { font-size: 7.5px; padding: 1px 2px; margin-top: 1px; border-radius: 2px; }
+      .free-label { font-size: 7.5px; }
+      .day-labels span { font-size: 8px; }
+      .app-header h1 { font-size: 1.1rem; }
+      .cal-nav .month-label { font-size: 0.95rem; }
+    }
     .slot {
       font-size: 9.5px;
       font-weight: 500;
