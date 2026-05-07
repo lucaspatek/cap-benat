@@ -87,7 +87,7 @@
     .person-btn.selected { background: var(--sea); color: #fff; border-color: var(--sea); }
 
     /* ── APP ── */
-    #app { display: none; max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+   #app { display: none; max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem 4rem; overflow-x: hidden; }
 
     .app-header {
       display: flex;
@@ -156,7 +156,7 @@
     }
 
     .cal-grid {
-      display: grid;
+      display: grid; overflow-x: auto;
       grid-template-columns: repeat(7, 1fr);
       gap: 3px;
     }
@@ -743,7 +743,11 @@ async function saveRes() {
 
 async function deleteRes() {
   if (editingId === null) return;
-  reservations = reservations.filter(r => r.id !== editingId);
+  const r = reservations.find(x => x.id === editingId);
+  const who = r ? r.people.join(', ') : '';
+  const ok = confirm('Supprimer la réservation de ' + who + ' ?\n' + (r ? r.start + ' → ' + r.end : ''));
+  if (!ok) return;
+  reservations = reservations.filter(x => x.id !== editingId);
   await saveToServer({ action: 'delete', reservations });
   closeModal();
   render();
